@@ -13,52 +13,14 @@ import (
 	"time"
 )
 
-type cliCommand struct {
-	name        string
-	description string
-	callBack    func(args ...string) error
-}
-
-type locationArea struct {
-	Count   int    `json:"count"`
-	Next    string `json:"next"`
-	Prev    string `json:"previous"`
-	Results []struct {
-		Name string `json:"name"`
-		URL  string `json:"url"`
-	} `json:"results"`
-}
-
 var currentMapUrl = ""
-var currentLocationArea locationArea
+var currentLocationArea locationAreaJSON
 var pokeCache *pc.Cache
 
 const PLACE_CURSOR string = "\033[H\033[3J\033[80;1H"
 const BASE_URL string = "https://pokeapi.co/api/v2/location-area/"
 
 var commandHooks map[string]cliCommand = make(map[string]cliCommand)
-
-func parseLocationJSON(data []byte) (locationArea, error) {
-
-	var locationAreas locationArea
-	err := json.Unmarshal(data, &locationAreas)
-	if err != nil {
-		return locationArea{}, errors.New("Invalid JSON returned")
-	}
-
-	return locationAreas, nil
-}
-
-func parsePokemonEncounterJSON(data []byte) (PokemonEncounter, error) {
-
-	var pokeJSON PokemonEncounter
-	err := json.Unmarshal(data, &pokeJSON)
-	if err != nil {
-		return PokemonEncounter{}, errors.New("Invalid JSON returned")
-	}
-
-	return pokeJSON, nil
-}
 
 func fillPokemonEncounter(url string) (PokemonEncounter, error) {
 	var data []byte
@@ -88,7 +50,7 @@ func fillPokemonEncounter(url string) (PokemonEncounter, error) {
 	return pokeJSON, nil
 }
 
-func fillLocationArea(url string) (locationArea, error) {
+func fillLocationArea(url string) (locationAreaJSON, error) {
 	var data []byte
 
 	if url == "" {
@@ -100,18 +62,18 @@ func fillLocationArea(url string) (locationArea, error) {
 	} else {
 		res, err := http.Get(url)
 		if err != nil {
-			return locationArea{}, errors.New("Error connecting to endpoint.")
+			return locationAreaJSON{}, errors.New("Error connecting to endpoint.")
 		}
 		defer res.Body.Close()
 		data, err = io.ReadAll(res.Body)
 		if err != nil {
-			return locationArea{}, err
+			return locationAreaJSON{}, err
 		}
 		pokeCache.Add(url, data)
 	}
 	locationAreas, err := parseLocationJSON(data)
 	if err != nil {
-		return locationArea{}, errors.New("JSON Parsing failed")
+		return locationAreaJSON{}, errors.New("JSON Parsing failed")
 	}
 
 	currentMapUrl = locationAreas.Next
