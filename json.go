@@ -5,24 +5,32 @@ import (
 	"errors"
 )
 
-func (lAJ locationAreaJSON) parseJSON(data []byte) (locationAreaJSON, error) {
+func (lAJ *locationAreaJSON) parseJSON(data []byte) error {
 
-	var locationAreas locationAreaJSON
-	err := json.Unmarshal(data, &locationAreas)
+	err := json.Unmarshal(data, lAJ)
 	if err != nil {
-		return locationAreaJSON{}, errors.New("Invalid JSON returned")
+		return errors.New("invalid JSON returned")
 	}
 
-	return locationAreas, nil
+	return nil
 }
 
-func (pEJ PokemonEncounterJSON) parseJSON(data []byte) (PokemonEncounterJSON, error) {
+func (pEJ *PokemonEncounterJSON) parseJSON(data []byte) error {
 
-	var pokeJSON PokemonEncounterJSON
-	err := json.Unmarshal(data, &pokeJSON)
+	err := json.Unmarshal(data, &pEJ)
 	if err != nil {
-		return PokemonEncounterJSON{}, errors.New("Invalid JSON returned")
+		return errors.New("invalid JSON returned")
 	}
 
-	return pokeJSON, nil
+	return nil
+}
+
+func (pJ *PokemonJSON) parseJSON(data []byte) error {
+
+	err := json.Unmarshal(data, &pJ)
+	if err != nil {
+		return errors.New("invalid JSON returned")
+	}
+
+	return nil
 }

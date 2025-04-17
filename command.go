@@ -30,15 +30,17 @@ func commandExplore(args ...string) error {
 
 	fmt.Printf("Exploring %s...\n", args[0])
 
-	pokeJSON, err := fillPokemonEncounter(BASE_URL + args[0])
+	var pokeEncJSON PokemonEncounterJSON
+	err := pokeEncJSON.fill(BASE_URL + args[0])
 	if err != nil {
-		return fmt.Errorf("Error: %w\n", err)
+		fmt.Println("Explore failed.")
+		return fmt.Errorf("Error: %w", err)
 	}
 
-	if len(pokeJSON.PokemonEncounters) > 0 {
+	if len(pokeEncJSON.PokemonEncounters) > 0 {
 		fmt.Println("Found Pokemon:")
-		for _, result := range pokeJSON.PokemonEncounters {
-			fmt.Printf(" - %s (%s)\n", result.Pokemon.Name, result.Pokemon.URL)
+		for _, result := range pokeEncJSON.PokemonEncounters {
+			fmt.Printf(" - %s\n", result.Pokemon.Name)
 		}
 	} else {
 		fmt.Println("No Pokemon found/Bad location")
@@ -48,12 +50,7 @@ func commandExplore(args ...string) error {
 }
 
 func commandMapB(args ...string) error {
-	if currentMapUrl == "null" {
-		fmt.Println("Final page reached")
-		return nil
-	}
-
-	currentLocationArea, err := fillLocationArea(currentLocationArea.Prev)
+	err := currentLocationArea.fill(currentLocationArea.Prev)
 
 	if err != nil {
 		fmt.Println("Error encountered retrieving locations... Exiting gracefully.")
@@ -68,12 +65,11 @@ func commandMapB(args ...string) error {
 }
 
 func commandMap(args ...string) error {
-	if currentMapUrl == "null" {
-		fmt.Println("Final page reached")
-		return nil
+	if currentMapUrl == "" {
+		currentMapUrl = BASE_URL
 	}
 
-	currentLocationArea, err := fillLocationArea(currentMapUrl)
+	err := currentLocationArea.fill(currentMapUrl)
 
 	if err != nil {
 		fmt.Println("Error encountered retrieving locations... Exiting gracefully.")

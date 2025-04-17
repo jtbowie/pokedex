@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"encoding/json"
 	"errors"
 	"fmt"
 	pc "github.com/jtbowie/pokedex/internal/pokecache"
@@ -22,35 +21,38 @@ const BASE_URL string = "https://pokeapi.co/api/v2/location-area/"
 
 var commandHooks map[string]cliCommand = make(map[string]cliCommand)
 
-func fillPokemonEncounter(url string) (PokemonEncounterJSON, error) {
+func (pEJ *PokemonEncounterJSON) fill(url string) error {
 	var data []byte
 
 	if url == "" {
-		return PokemonEncounterJSON{}, errors.New("Enter a url dude.")
+		return errors.New("enter a url dude")
 	}
 	if cacheItem, ok := pokeCache.Get(url); ok {
 		data = cacheItem
 	} else {
 		res, err := http.Get(url)
 		if err != nil {
-			return PokemonEncounterJSON{}, errors.New("Error connecting to endpoint.")
+			return errors.New("error connecting to endpoint")
 		}
 		defer res.Body.Close()
 		data, err = io.ReadAll(res.Body)
 		if err != nil {
-			return PokemonEncounterJSON{}, err
+			return err
 		}
 		pokeCache.Add(url, data)
 	}
-	pokeJSON, err := parsePokemonEncounterJSON(data)
+
+	var pokeJSONObj JSONObj = pEJ
+
+	err := pokeJSONObj.parseJSON(data)
 	if err != nil {
-		return PokemonEncounterJSON{}, errors.New("JSON Parsing failed")
+		return errors.New("JSON Parsing failed")
 	}
 
-	return pokeJSON, nil
+	return nil
 }
 
-func fill[T jsonObj](url string, localjsonObj T) (locationAreaJSON, error) {
+func (lAJ *locationAreaJSON) fill(url string) error {
 	var data []byte
 
 	if url == "" {
@@ -62,29 +64,33 @@ func fill[T jsonObj](url string, localjsonObj T) (locationAreaJSON, error) {
 	} else {
 		res, err := http.Get(url)
 		if err != nil {
-			return locationAreaJSON{}, errors.New("Error connecting to endpoint.")
+			return errors.New("error connecting to endpoint")
 		}
 		defer res.Body.Close()
 		data, err = io.ReadAll(res.Body)
 		if err != nil {
-			return locationAreaJSON{}, err
+			return err
 		}
 		pokeCache.Add(url, data)
 	}
 
-	var locationAreas locationAreaJSON
-	locationAreas, err := parseJSON(data)
+	var localjsonObj JSONObj = lAJ
+
+	err := localjsonObj.parseJSON(data)
 	if err != nil {
-		return locationAreaJSON{}, errors.New("JSON Parsing failed")
+		return errors.New("JSON Parsing failed")
 	}
 
-	currentMapUrl = locationAreas.Next
+	currentMapUrl = lAJ.Next
 
-	return locationAreas, nil
+	return nil
 }
 
 func clearScreen() {
-	fmt.Fprintf(os.Stdout, PLACE_CURSOR)
+	_, err := fmt.Fprint(os.Stdout, PLACE_CURSOR)
+	if err != nil {
+		fmt.Println("Error clearing screen")
+	}
 }
 
 func cleanInput(text string) []string {
