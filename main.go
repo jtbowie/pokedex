@@ -16,7 +16,7 @@ import (
 type cliCommand struct {
 	name        string
 	description string
-	callBack    func() error
+	callBack    func(args ...string) error
 }
 
 type locationArea struct {
@@ -34,16 +34,17 @@ var currentLocationArea locationArea
 var pokeCache *pc.Cache
 
 const PLACE_CURSOR string = "\033[H\033[3J\033[80;1H"
+const BASE_URL string = "https://pokeapi.co/api/v2/location-area/"
 
 var commandHooks map[string]cliCommand = make(map[string]cliCommand)
 
-func commandExit() error {
+func commandExit(args ...string) error {
 	fmt.Println("Closing the Pokedex... Goodbye!")
 	os.Exit(0)
 	return errors.New("WTF, os.Exit failed...")
 }
 
-func commandHelp() error {
+func commandHelp(args ...string) error {
 	fmt.Println("Welcome to the Pokedex!")
 	fmt.Println("Usage:")
 	fmt.Println()
@@ -54,7 +55,31 @@ func commandHelp() error {
 	return nil
 }
 
-func commandMapB() error {
+func commandExplore(args ...string) error {
+	if len(args) < 1 {
+		return errors.New("explore: Need location argument")
+	}
+
+	fmt.Printf("Exploring %s...\n", args[0])
+
+	pokeJSON, err := fillPokemon(BASE_URL + args[0])
+	if err != nil {
+		return fmt.Errorf("Error: %w\n", err)
+	}
+
+	if len(pokeJSON.PokemonEncounters) > 0 {
+		fmt.Println("Found Pokemon:")
+		for _, result := range pokeJSON.PokemonEncounters {
+			fmt.Printf(" - %s\n", result.Pokemon.Name)
+		}
+	} else {
+		fmt.Println("No Pokemon found/Bad location")
+	}
+
+	return nil
+}
+
+func commandMapB(args ...string) error {
 	if currentMapUrl == "null" {
 		fmt.Println("Final page reached")
 		return nil
@@ -74,7 +99,7 @@ func commandMapB() error {
 	return nil
 }
 
-func commandMap() error {
+func commandMap(args ...string) error {
 	if currentMapUrl == "null" {
 		fmt.Println("Final page reached")
 		return nil
@@ -105,11 +130,50 @@ func parseLocationJSON(data []byte) (locationArea, error) {
 	return locationAreas, nil
 }
 
+func parsePokemonJSON(data []byte) (Pokemon, error) {
+
+	var pokeJSON Pokemon
+	err := json.Unmarshal(data, &pokeJSON)
+	if err != nil {
+		return Pokemon{}, errors.New("Invalid JSON returned")
+	}
+
+	return pokeJSON, nil
+}
+
+func fillPokemon(url string) (Pokemon, error) {
+	var data []byte
+
+	if url == "" {
+		return Pokemon{}, errors.New("Enter a url dude.")
+	}
+	if cacheItem, ok := pokeCache.Get(url); ok {
+		data = cacheItem
+	} else {
+		res, err := http.Get(url)
+		if err != nil {
+			return Pokemon{}, errors.New("Error connecting to endpoint.")
+		}
+		defer res.Body.Close()
+		data, err = io.ReadAll(res.Body)
+		if err != nil {
+			return Pokemon{}, err
+		}
+		pokeCache.Add(url, data)
+	}
+	pokeJSON, err := parsePokemonJSON(data)
+	if err != nil {
+		return Pokemon{}, errors.New("JSON Parsing failed")
+	}
+
+	return pokeJSON, nil
+}
+
 func fillLocationArea(url string) (locationArea, error) {
 	var data []byte
 
 	if url == "" {
-		url = "https://pokeapi.co/api/v2/location-area/"
+		url = BASE_URL
 	}
 
 	if cacheItem, ok := pokeCache.Get(url); ok {
@@ -156,10 +220,11 @@ func buildCommandHooks(rawHooks map[string]cliCommand) {
 	rawHooks["help"] = cliCommand{name: "help", description: "Displays a help message", callBack: commandHelp}
 	rawHooks["map"] = cliCommand{name: "map", description: "Display the next location areas", callBack: commandMap}
 	rawHooks["mapb"] = cliCommand{name: "mapb", description: "Display the prev location areas", callBack: commandMapB}
+	rawHooks["explore"] = cliCommand{name: "explore", description: "Return the pokemon in a given area!", callBack: commandExplore}
 }
 
 func replLoop() {
-	var line, word string
+	var line string
 	scanner := bufio.NewScanner(os.Stdin)
 
 	buildCommandHooks(commandHooks)
@@ -168,11 +233,21 @@ func replLoop() {
 		fmt.Printf("PODEX9001 > ")
 		scanner.Scan()
 		line = scanner.Text()
-		word = strings.Split(line, " ")[0]
-		if command, ok := commandHooks[word]; ok {
-			command.callBack()
+		args := strings.Split(line, " ")
+		arg_count := len(args)
+		input_command := args[0]
+
+		if command, ok := commandHooks[input_command]; ok {
+			switch input_command {
+			case "explore":
+				if arg_count > 1 {
+					command.callBack(args[1:]...)
+				}
+			default:
+				command.callBack()
+			}
 		} else {
-			fmt.Printf("Invalid command: %s\n%s", word, PLACE_CURSOR)
+			fmt.Printf("Invalid command: %s\n%s", input_command, PLACE_CURSOR)
 		}
 	}
 }
