@@ -62,7 +62,7 @@ func commandExplore(args ...string) error {
 
 	fmt.Printf("Exploring %s...\n", args[0])
 
-	pokeJSON, err := fillPokemon(BASE_URL + args[0])
+	pokeJSON, err := fillPokemonEncounter(BASE_URL + args[0])
 	if err != nil {
 		return fmt.Errorf("Error: %w\n", err)
 	}
@@ -70,7 +70,7 @@ func commandExplore(args ...string) error {
 	if len(pokeJSON.PokemonEncounters) > 0 {
 		fmt.Println("Found Pokemon:")
 		for _, result := range pokeJSON.PokemonEncounters {
-			fmt.Printf(" - %s\n", result.Pokemon.Name)
+			fmt.Printf(" - %s (%s)\n", result.Pokemon.Name, result.Pokemon.URL)
 		}
 	} else {
 		fmt.Println("No Pokemon found/Bad location")
@@ -130,40 +130,40 @@ func parseLocationJSON(data []byte) (locationArea, error) {
 	return locationAreas, nil
 }
 
-func parsePokemonJSON(data []byte) (Pokemon, error) {
+func parsePokemonEncounterJSON(data []byte) (PokemonEncounter, error) {
 
-	var pokeJSON Pokemon
+	var pokeJSON PokemonEncounter
 	err := json.Unmarshal(data, &pokeJSON)
 	if err != nil {
-		return Pokemon{}, errors.New("Invalid JSON returned")
+		return PokemonEncounter{}, errors.New("Invalid JSON returned")
 	}
 
 	return pokeJSON, nil
 }
 
-func fillPokemon(url string) (Pokemon, error) {
+func fillPokemonEncounter(url string) (PokemonEncounter, error) {
 	var data []byte
 
 	if url == "" {
-		return Pokemon{}, errors.New("Enter a url dude.")
+		return PokemonEncounter{}, errors.New("Enter a url dude.")
 	}
 	if cacheItem, ok := pokeCache.Get(url); ok {
 		data = cacheItem
 	} else {
 		res, err := http.Get(url)
 		if err != nil {
-			return Pokemon{}, errors.New("Error connecting to endpoint.")
+			return PokemonEncounter{}, errors.New("Error connecting to endpoint.")
 		}
 		defer res.Body.Close()
 		data, err = io.ReadAll(res.Body)
 		if err != nil {
-			return Pokemon{}, err
+			return PokemonEncounter{}, err
 		}
 		pokeCache.Add(url, data)
 	}
-	pokeJSON, err := parsePokemonJSON(data)
+	pokeJSON, err := parsePokemonEncounterJSON(data)
 	if err != nil {
-		return Pokemon{}, errors.New("JSON Parsing failed")
+		return PokemonEncounter{}, errors.New("JSON Parsing failed")
 	}
 
 	return pokeJSON, nil

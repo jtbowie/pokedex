@@ -1,6 +1,6 @@
 package main
 
-type Pokemon struct {
+type PokemonEncounter struct {
 	EncounterMethodRates []struct {
 		EncounterMethod struct {
 			Name string `json:"name"`
