@@ -45,7 +45,8 @@ func commandExit() error {
 
 func commandHelp() error {
 	fmt.Println("Welcome to the Pokedex!")
-	fmt.Println("Usage:\n")
+	fmt.Println("Usage:")
+	fmt.Println()
 
 	for command := range commandHooks {
 		fmt.Printf("%s: %s\n%s", commandHooks[command].name, commandHooks[command].description, PLACE_CURSOR)
