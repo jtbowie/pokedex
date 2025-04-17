@@ -22,35 +22,35 @@ const BASE_URL string = "https://pokeapi.co/api/v2/location-area/"
 
 var commandHooks map[string]cliCommand = make(map[string]cliCommand)
 
-func fillPokemonEncounter(url string) (PokemonEncounter, error) {
+func fillPokemonEncounter(url string) (PokemonEncounterJSON, error) {
 	var data []byte
 
 	if url == "" {
-		return PokemonEncounter{}, errors.New("Enter a url dude.")
+		return PokemonEncounterJSON{}, errors.New("Enter a url dude.")
 	}
 	if cacheItem, ok := pokeCache.Get(url); ok {
 		data = cacheItem
 	} else {
 		res, err := http.Get(url)
 		if err != nil {
-			return PokemonEncounter{}, errors.New("Error connecting to endpoint.")
+			return PokemonEncounterJSON{}, errors.New("Error connecting to endpoint.")
 		}
 		defer res.Body.Close()
 		data, err = io.ReadAll(res.Body)
 		if err != nil {
-			return PokemonEncounter{}, err
+			return PokemonEncounterJSON{}, err
 		}
 		pokeCache.Add(url, data)
 	}
 	pokeJSON, err := parsePokemonEncounterJSON(data)
 	if err != nil {
-		return PokemonEncounter{}, errors.New("JSON Parsing failed")
+		return PokemonEncounterJSON{}, errors.New("JSON Parsing failed")
 	}
 
 	return pokeJSON, nil
 }
 
-func fillLocationArea(url string) (locationAreaJSON, error) {
+func fill[T jsonObj](url string, localjsonObj T) (locationAreaJSON, error) {
 	var data []byte
 
 	if url == "" {
@@ -71,7 +71,9 @@ func fillLocationArea(url string) (locationAreaJSON, error) {
 		}
 		pokeCache.Add(url, data)
 	}
-	locationAreas, err := parseLocationJSON(data)
+
+	var locationAreas locationAreaJSON
+	locationAreas, err := parseJSON(data)
 	if err != nil {
 		return locationAreaJSON{}, errors.New("JSON Parsing failed")
 	}
