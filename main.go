@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	pc "github.com/jtbowie/pokedex/internal/pokecache"
 	"io"
 	"net/http"
 	"os"
 	"strings"
+	"time"
 )
 
 type cliCommand struct {
@@ -29,6 +31,7 @@ type locationArea struct {
 
 var currentMapUrl = ""
 var currentLocationArea locationArea
+var pokeCache *pc.Cache
 
 const PLACE_CURSOR string = "\033[H\033[3J\033[80;1H"
 
@@ -63,8 +66,8 @@ func commandMapB() error {
 		commandExit()
 	}
 
-	for result := range len(currentLocationArea.Results) {
-		fmt.Println(currentLocationArea.Results[result].Name)
+	for _, result := range currentLocationArea.Results {
+		fmt.Println(result.Name)
 	}
 
 	return nil
@@ -83,19 +86,17 @@ func commandMap() error {
 		commandExit()
 	}
 
-	for result := range len(currentLocationArea.Results) {
-		fmt.Println(currentLocationArea.Results[result].Name)
+	for _, result := range currentLocationArea.Results {
+		fmt.Println(result.Name)
 	}
 
 	return nil
 }
 
-func parseLocationJSON(res http.Response) (locationArea, error) {
-	body, err := io.ReadAll(res.Body)
-	defer res.Body.Close()
+func parseLocationJSON(data []byte) (locationArea, error) {
 
 	var locationAreas locationArea
-	err = json.Unmarshal(body, &locationAreas)
+	err := json.Unmarshal(data, &locationAreas)
 	if err != nil {
 		return locationArea{}, errors.New("Invalid JSON returned")
 	}
@@ -104,17 +105,27 @@ func parseLocationJSON(res http.Response) (locationArea, error) {
 }
 
 func fillLocationArea(url string) (locationArea, error) {
+	var data []byte
+
 	if url == "" {
 		url = "https://pokeapi.co/api/v2/location-area/"
 	}
 
-	res, err := http.Get(url)
-
-	if err != nil {
-		return locationArea{}, errors.New("Error connecting to endpoint.")
+	if cacheItem, ok := pokeCache.Get(url); ok {
+		data = cacheItem
+	} else {
+		res, err := http.Get(url)
+		if err != nil {
+			return locationArea{}, errors.New("Error connecting to endpoint.")
+		}
+		defer res.Body.Close()
+		data, err = io.ReadAll(res.Body)
+		if err != nil {
+			return locationArea{}, err
+		}
+		pokeCache.Add(url, data)
 	}
-
-	locationAreas, err := parseLocationJSON(*res)
+	locationAreas, err := parseLocationJSON(data)
 	if err != nil {
 		return locationArea{}, errors.New("JSON Parsing failed")
 	}
@@ -167,5 +178,6 @@ func replLoop() {
 
 func main() {
 	clearScreen()
+	pokeCache = pc.NewCache(5 * time.Minute)
 	replLoop()
 }
