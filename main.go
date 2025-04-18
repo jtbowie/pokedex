@@ -145,6 +145,8 @@ func buildCommandHooks(rawHooks map[string]cliCommand) {
 	rawHooks["mapb"] = cliCommand{name: "mapb", description: "Display the prev location areas", callBack: commandMapB}
 	rawHooks["explore"] = cliCommand{name: "explore", description: "Return the pokemon in a given area!", callBack: commandExplore}
 	rawHooks["catch"] = cliCommand{name: "catch", description: "Catch a pokemon in a given area!", callBack: commandCatch}
+	rawHooks["inspect"] = cliCommand{name: "inspect", description: "Inspect a pokemon!", callBack: commandInspect}
+
 }
 
 func replLoop() {
@@ -168,6 +170,10 @@ func replLoop() {
 					command.callBack(args[1:]...)
 				}
 			case "catch":
+				if arg_count > 1 {
+					command.callBack(args[1:]...)
+				}
+			case "inspect":
 				if arg_count > 1 {
 					command.callBack(args[1:]...)
 				}

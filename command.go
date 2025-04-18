@@ -24,6 +24,49 @@ func commandHelp(args ...string) error {
 	return nil
 }
 
+func commandInspect(args ...string) error {
+	if len(args) < 1 {
+		return errors.New("inspect: no pokemon given")
+	}
+
+	targetPokemon := args[0]
+	found := false
+
+	for key := range pokeDex {
+		if pokeJSON, ok := pokeDex[key]; ok {
+			if pokeJSON.Name == targetPokemon {
+				found = true
+			}
+		}
+	}
+
+	if !found {
+		fmt.Printf("You have not caught %s yet!!\n", args[0])
+		return nil
+	}
+
+	pokemon := pokeDex[targetPokemon]
+
+	fmt.Printf("Name: %s\n", pokemon.Name)
+	fmt.Printf("Height: %d\n", pokemon.Height)
+	fmt.Printf("Weight: %d\n", pokemon.Weight)
+	fmt.Println("Stats:")
+
+	for idx := range pokemon.Stats {
+		fmt.Printf("  -%s: %d\n",
+			pokemon.Stats[idx].Stat.Name,
+			pokemon.Stats[idx].BaseStat)
+	}
+
+	fmt.Println("Types:")
+	for idx := range pokemon.Types {
+		fmt.Printf("  - %s\n",
+			pokemon.Types[idx].Type.Name)
+	}
+
+	return nil
+}
+
 func commandCatch(args ...string) error {
 	if len(args) < 1 {
 		return errors.New("catch: must supply pokemon to catch")
@@ -53,8 +96,9 @@ func commandCatch(args ...string) error {
 
 	fmt.Printf("Toughness: %d\n", toughness)
 
-	if rand.Intn(150) <= toughness {
+	if rand.Intn(165) <= toughness {
 		fmt.Printf("You caught %s!!!\n", targetPokemon)
+		fmt.Printf("Inspect this pokemon to see its attributes! 'inspect %s'\n", targetPokemon)
 		pokeDex[targetPokemon] = pokemonJSON
 		return nil
 	}
@@ -75,7 +119,7 @@ func commandExplore(args ...string) error {
 	err := pokeEncJSON.fill(BASE_URL + args[0])
 	if err != nil {
 		fmt.Println("Explore failed.")
-		return fmt.Errorf("Error: %w", err)
+		return fmt.Errorf("error: %w", err)
 	}
 
 	if len(pokeEncJSON.PokemonEncounters) > 0 {
