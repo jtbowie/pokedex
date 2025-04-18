@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"math/rand"
 	"os"
 )
 
@@ -31,6 +32,34 @@ func commandCatch(args ...string) error {
 	if currentEncounter.ID == 0 {
 		fmt.Println("Please explore an area first!")
 	}
+
+	targetPokemon := args[0]
+	fmt.Printf("Throwing a Pokeball at %s...\n", targetPokemon)
+	targetPokemonURL, err := pokemonInArea(targetPokemon)
+	if err != nil {
+		fmt.Printf("I'm sorry, %s isn't found in %s\n", targetPokemon, currentEncounter.Name)
+		return errors.New("pokemon not found")
+	}
+
+	var pokemonJSON PokemonJSON
+	err = pokemonJSON.fill(targetPokemonURL)
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+	}
+
+	xp := pokemonJSON.BaseExperience
+
+	toughness := 100 - (xp / 4)
+
+	fmt.Printf("Toughness: %d\n", toughness)
+
+	if rand.Intn(150) <= toughness {
+		fmt.Printf("You caught %s!!!\n", targetPokemon)
+		pokeDex[targetPokemon] = pokemonJSON
+		return nil
+	}
+
+	fmt.Printf("%s 'scaped :( :(\n", targetPokemon)
 
 	return nil
 }

@@ -16,6 +16,7 @@ var currentMapUrl = ""
 var currentLocationArea locationAreaJSON
 var currentEncounter PokemonEncounterJSON
 var pokeCache *pc.Cache
+var pokeDex map[string]PokemonJSON = make(map[string]PokemonJSON)
 
 const PLACE_CURSOR string = "\033[H\033[3J\033[80;1H"
 const BASE_URL string = "https://pokeapi.co/api/v2/location-area/"
@@ -143,6 +144,7 @@ func buildCommandHooks(rawHooks map[string]cliCommand) {
 	rawHooks["map"] = cliCommand{name: "map", description: "Display the next location areas", callBack: commandMap}
 	rawHooks["mapb"] = cliCommand{name: "mapb", description: "Display the prev location areas", callBack: commandMapB}
 	rawHooks["explore"] = cliCommand{name: "explore", description: "Return the pokemon in a given area!", callBack: commandExplore}
+	rawHooks["catch"] = cliCommand{name: "catch", description: "Catch a pokemon in a given area!", callBack: commandCatch}
 }
 
 func replLoop() {
@@ -162,6 +164,10 @@ func replLoop() {
 		if command, ok := commandHooks[input_command]; ok {
 			switch input_command {
 			case "explore":
+				if arg_count > 1 {
+					command.callBack(args[1:]...)
+				}
+			case "catch":
 				if arg_count > 1 {
 					command.callBack(args[1:]...)
 				}
