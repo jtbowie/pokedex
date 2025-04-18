@@ -17,7 +17,7 @@ func (lAJ *locationAreaJSON) parseJSON(data []byte) error {
 
 func (pEJ *PokemonEncounterJSON) parseJSON(data []byte) error {
 
-	err := json.Unmarshal(data, &pEJ)
+	err := json.Unmarshal(data, pEJ)
 	if err != nil {
 		return errors.New("invalid JSON returned")
 	}
@@ -27,7 +27,7 @@ func (pEJ *PokemonEncounterJSON) parseJSON(data []byte) error {
 
 func (pJ *PokemonJSON) parseJSON(data []byte) error {
 
-	err := json.Unmarshal(data, &pJ)
+	err := json.Unmarshal(data, pJ)
 	if err != nil {
 		return errors.New("invalid JSON returned")
 	}

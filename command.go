@@ -23,6 +23,18 @@ func commandHelp(args ...string) error {
 	return nil
 }
 
+func commandCatch(args ...string) error {
+	if len(args) < 1 {
+		return errors.New("catch: must supply pokemon to catch")
+	}
+
+	if currentEncounter.ID == 0 {
+		fmt.Println("Please explore an area first!")
+	}
+
+	return nil
+}
+
 func commandExplore(args ...string) error {
 	if len(args) < 1 {
 		return errors.New("explore: Need location argument")

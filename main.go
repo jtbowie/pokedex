@@ -14,12 +14,44 @@ import (
 
 var currentMapUrl = ""
 var currentLocationArea locationAreaJSON
+var currentEncounter PokemonEncounterJSON
 var pokeCache *pc.Cache
 
 const PLACE_CURSOR string = "\033[H\033[3J\033[80;1H"
 const BASE_URL string = "https://pokeapi.co/api/v2/location-area/"
 
 var commandHooks map[string]cliCommand = make(map[string]cliCommand)
+
+func (pEJ *PokemonJSON) fill(url string) error {
+	var data []byte
+
+	if url == "" {
+		return errors.New("enter a url dude")
+	}
+	if cacheItem, ok := pokeCache.Get(url); ok {
+		data = cacheItem
+	} else {
+		res, err := http.Get(url)
+		if err != nil {
+			return errors.New("error connecting to endpoint")
+		}
+		defer res.Body.Close()
+		data, err = io.ReadAll(res.Body)
+		if err != nil {
+			return err
+		}
+		pokeCache.Add(url, data)
+	}
+
+	var pokeJSONObj JSONObj = pEJ
+
+	err := pokeJSONObj.parseJSON(data)
+	if err != nil {
+		return errors.New("JSON Parsing failed")
+	}
+
+	return nil
+}
 
 func (pEJ *PokemonEncounterJSON) fill(url string) error {
 	var data []byte
@@ -48,6 +80,7 @@ func (pEJ *PokemonEncounterJSON) fill(url string) error {
 	if err != nil {
 		return errors.New("JSON Parsing failed")
 	}
+	currentEncounter = *pEJ
 
 	return nil
 }
