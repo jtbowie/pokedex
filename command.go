@@ -30,35 +30,50 @@ func printHelpBanner() {
 }
 
 func commandPokedex(args ...string) error {
-	if err := checkPokedexCommandLengthAndPrintCodex(); err != nil {
-		return err
+	if err := checkPokedexNotEmpty(); err != nil {
+		return printPokedexEmptyError()
+	}
+	return nil
+}
+
+func checkPokedexNotEmpty() error {
+	if !checkPokedexEmpty() {
+		return newPokedexEmptyError()
 	}
 	printPokedexContents()
 	return nil
 }
 
-func checkPokedexCommandLengthAndPrintCodex() error {
-	if err := checkPokedexCommandLength(); err != nil {
-		return err
-	}
-	printPokedexContents()
-	return nil
+func newPokedexEmptyError() error {
+	return errors.New("pokdex is empty")
 }
 
 func printPokedexContents() {
-	fmt.Print(POKEDEX_CONTENTS_BANNER)
+	printPokedexContentsBanner()
 	for name := range pokeDex {
-		fmt.Printf("  - %s\n", name)
+		printPokedexNames(name)
 	}
 }
 
-func checkPokedexCommandLength() error {
-	if len(pokeDex) < 1 {
-		fmt.Print(POKEDEX_COMMAND_LENGTH_ERROR_MSG)
-		return errors.New("pokedex size error (empty)")
-	}
+func printPokedexContentsBanner() {
+	fmt.Print(POKEDEX_CONTENTS_BANNER)
+}
 
-	return nil
+func printPokedexNames(name string) {
+	fmt.Printf(POKEDEX_CONTENTS_NAME_TEMPLATE, name)
+}
+
+func checkPokedexEmpty() bool {
+	return len(pokeDex) < 1
+}
+
+func printPokedexEmptyError() error {
+	fmt.Print(POKEDEX_COMMAND_LENGTH_ERROR_MSG)
+	return createPokedexEmptyError()
+}
+
+func createPokedexEmptyError() error {
+	return errors.New("pokedex size error (empty)")
 }
 
 func checkForPokemonInPokedex(key string, targetPokemon string) bool {
@@ -74,17 +89,16 @@ func checkPokemonNameAgainstTarget(pokeJSON PokemonJSON, targetPokemon string) b
 }
 
 func checkForPokemonInArea(targetPokemon string) bool {
-	found := false
 	for key := range pokeDex {
-		found = checkForPokemonInPokedex(key, targetPokemon)
+		if checkForPokemonInPokedex(key, targetPokemon) {
+			return true
+		}
 	}
+	return false
+}
 
-	if !found {
-		fmt.Printf("You have not caught %s yet!!\n", targetPokemon)
-		return found
-	}
-
-	return found
+func printPokemonNotCaughtMessage(targetPokemon string) {
+	fmt.Printf(POKEDEX_NOT_CAUGHT_MSG, targetPokemon)
 }
 
 func commandInspect(args ...string) error {
@@ -95,6 +109,7 @@ func commandInspect(args ...string) error {
 	targetPokemon := args[0]
 
 	if !checkForPokemonInArea(targetPokemon) {
+		printPokemonNotCaughtMessage(targetPokemon)
 		return nil
 	}
 
