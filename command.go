@@ -14,14 +14,77 @@ func commandExit(args ...string) error {
 }
 
 func commandHelp(args ...string) error {
-	fmt.Println("Welcome to the Pokedex!")
-	fmt.Println("Usage:")
-	fmt.Println()
+	printHelpBanner()
+	printHelpDescriptions()
+	return nil
+}
 
+func printHelpDescriptions() {
 	for command := range commandHooks {
 		fmt.Printf("%s: %s\n%s", commandHooks[command].name, commandHooks[command].description, PLACE_CURSOR)
 	}
+}
+
+func printHelpBanner() {
+	fmt.Print(HELP_BANNER)
+}
+
+func commandPokedex(args ...string) error {
+	if err := checkPokedexCommandLengthAndPrintCodex(); err != nil {
+		return err
+	}
+	printPokedexContents()
 	return nil
+}
+
+func checkPokedexCommandLengthAndPrintCodex() error {
+	if err := checkPokedexCommandLength(); err != nil {
+		return err
+	}
+	printPokedexContents()
+	return nil
+}
+
+func printPokedexContents() {
+	fmt.Print(POKEDEX_CONTENTS_BANNER)
+	for name := range pokeDex {
+		fmt.Printf("  - %s\n", name)
+	}
+}
+
+func checkPokedexCommandLength() error {
+	if len(pokeDex) < 1 {
+		fmt.Print(POKEDEX_COMMAND_LENGTH_ERROR_MSG)
+		return errors.New("pokedex size error (empty)")
+	}
+
+	return nil
+}
+
+func checkForPokemonInPokedex(key string, targetPokemon string) bool {
+	pokeJSON, ok := pokeDex[key]
+	if !ok {
+		return false
+	}
+	return checkPokemonNameAgainstTarget(pokeJSON, targetPokemon)
+}
+
+func checkPokemonNameAgainstTarget(pokeJSON PokemonJSON, targetPokemon string) bool {
+	return pokeJSON.Name == targetPokemon
+}
+
+func checkForPokemonInArea(targetPokemon string) bool {
+	found := false
+	for key := range pokeDex {
+		found = checkForPokemonInPokedex(key, targetPokemon)
+	}
+
+	if !found {
+		fmt.Printf("You have not caught %s yet!!\n", targetPokemon)
+		return found
+	}
+
+	return found
 }
 
 func commandInspect(args ...string) error {
@@ -30,27 +93,13 @@ func commandInspect(args ...string) error {
 	}
 
 	targetPokemon := args[0]
-	found := false
 
-	for key := range pokeDex {
-		if pokeJSON, ok := pokeDex[key]; ok {
-			if pokeJSON.Name == targetPokemon {
-				found = true
-			}
-		}
-	}
-
-	if !found {
-		fmt.Printf("You have not caught %s yet!!\n", args[0])
+	if !checkForPokemonInArea(targetPokemon) {
 		return nil
 	}
 
 	pokemon := pokeDex[targetPokemon]
-
-	fmt.Printf("Name: %s\n", pokemon.Name)
-	fmt.Printf("Height: %d\n", pokemon.Height)
-	fmt.Printf("Weight: %d\n", pokemon.Weight)
-	fmt.Println("Stats:")
+	fmt.Printf(POKEDEX_INSPECT_TEMPLATE, pokemon.Name, pokemon.Height, pokemon.Weight)
 
 	for idx := range pokemon.Stats {
 		fmt.Printf("  -%s: %d\n",

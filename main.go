@@ -146,6 +146,7 @@ func buildCommandHooks(rawHooks map[string]cliCommand) {
 	rawHooks["explore"] = cliCommand{name: "explore", description: "Return the pokemon in a given area!", callBack: commandExplore}
 	rawHooks["catch"] = cliCommand{name: "catch", description: "Catch a pokemon in a given area!", callBack: commandCatch}
 	rawHooks["inspect"] = cliCommand{name: "inspect", description: "Inspect a pokemon!", callBack: commandInspect}
+	rawHooks["pokedex"] = cliCommand{name: "pokedex", description: "View your captured pokemon!", callBack: commandPokedex}
 
 }
 
